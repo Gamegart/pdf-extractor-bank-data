@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>PDF Statement Extractor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand-line"><span class="brand-mark">MP</span><span>STATEMENT TOOLS</span></div>
+      <span class="local-tag"><span class="status-dot"></span> LOCAL PROCESSING</span>
+      <h1>PDF statement extractor</h1>
+      <p class="masthead-copy">Select each statement format and choose how to export its transactions.</p>
+    </div>
+  </header>
+
+  <main class="workspace">
+    {% if errors %}
+      <section class="feedback" role="alert" aria-labelledby="feedback-title">
+        <h2 id="feedback-title">Some files need attention</h2>
+        <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      </section>
+    {% endif %}
+
+    {% if result %}
+      <section class="result-panel" aria-labelledby="result-title">
+        <div>
+          <span class="eyebrow">EXPORT READY</span>
+          <h2 id="result-title">{{ result.transaction_count }} transactions</h2>
+          <p>{{ result.file_count }} output file{% if result.file_count != 1 %}s{% endif %} · {{ result.filename }}</p>
+        </div>
+        <a class="download-button" href="{{ result.download_url }}">Download export <span aria-hidden="true">↓</span></a>
+      </section>
+    {% endif %}
+
+    <form class="extract-form" action="{{ url_for('index') }}" method="post" enctype="multipart/form-data">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">01 / INPUT</span>
+          <h2>Add statement PDFs</h2>
+        </div>
+        <span class="section-note">Choose files under the format they use</span>
+      </div>
+
+      <div class="format-grid">
+        {% for parser_key, parser in parsers.items() %}
+          <section class="format-panel">
+            <div class="format-index">0{{ loop.index }}</div>
+            <div class="format-copy">
+              <h3>{{ parser[0] }}</h3>
+              <p>PDF statements</p>
+            </div>
+            <label class="file-picker">
+              <span class="file-picker-label">Choose PDFs</span>
+              <input type="file" name="pdfs_{{ parser_key }}" accept=".pdf,application/pdf" multiple>
+              <span class="file-count" aria-live="polite">No files selected</span>
+            </label>
+          </section>
+        {% endfor %}
+      </div>
+
+      <div class="section-heading output-heading">
+        <div>
+          <span class="eyebrow">02 / OUTPUT</span>
+          <h2>Choose your export</h2>
+        </div>
+      </div>
+      <fieldset class="output-options">
+        <legend class="visually-hidden">CSV output format</legend>
+        <label class="output-option">
+          <input type="radio" name="output_mode" value="separate" {% if output_mode == 'separate' %}checked{% endif %}>
+          <span class="radio-indicator"></span>
+          <span class="option-copy"><strong>Separate CSVs</strong><small>One file per PDF, packaged in a ZIP</small></span>
+        </label>
+        <label class="output-option">
+          <input type="radio" name="output_mode" value="combined" {% if output_mode == 'combined' %}checked{% endif %}>
+          <span class="radio-indicator"></span>
+          <span class="option-copy"><strong>One combined CSV</strong><small>All transactions sorted by date</small></span>
+        </label>
+      </fieldset>
+
+      <div class="form-footer">
+        <span>PDFs are processed locally and are not retained after export.</span>
+        <button class="process-button" type="submit">Process statements <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    document.querySelectorAll('input[type="file"]').forEach((input) => {
+      input.addEventListener("change", () => {
+        const count = input.files.length;
+        const label = input.closest(".file-picker").querySelector(".file-count");
+        label.textContent = count === 0 ? "No files selected" : `${count} PDF${count === 1 ? "" : "s"} selected`;
+      });
+    });
+  </script>
+</body>
+</html>
